@@ -5,7 +5,7 @@
             "server": "localhost",
             "port": 5432,
             "driver": "PostgreSQL",
-            "name": "DB_BOOK",
+            "name": "bookdb",
             "database": "db",
             "username": "postgres"
         }
