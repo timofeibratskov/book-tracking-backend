@@ -19,6 +19,23 @@ async def create_book(
     book_data: BookCreate,
     service: BookService = Depends(get_book_service)
 ):
+    """
+    Создает новую книгу в системе.
+
+    **Параметры запроса:**
+    - Не принимаются (используется тело запроса).
+
+    **Тело запроса:**
+    - `book_data`: Объект с данными для новой книги (согласно схеме BookCreate).
+
+    **Успешный ответ:**
+    - **201 Created**: Книга успешно создана. Возвращает объект созданной книги (согласно схеме Book).
+
+    **Возможные ошибки:**
+    - **409 Conflict**: Книга с таким ISBN уже существует.
+    - **422 Unprocessable Entity**: Неверный формат данных в теле запроса (обрабатывается FastAPI автоматически по схеме BookCreate).
+    - **500 Internal Server Error**: Произошла внутренняя ошибка на сервере во время создания книги (например, ошибка БД).
+    """
     try:
         return await service.create_book(book_data)
     except ISBNAlreadyExistsError as e:
@@ -42,6 +59,22 @@ async def list_books(
     author: Optional[str] = Query(None, description="Filter books by author"),
     service: BookService = Depends(get_book_service)
 ):
+    """
+    Получает список всех книг с возможностью фильтрации по языку или автору, с пагинацией.
+
+    **Параметры запроса:**
+    - `skip`: Пагинация, количество пропускаемых книг.
+    - `limit`: Пагинация, максимальное количество книг в ответе.
+    - `language`: Необязательный фильтр по языку книги.
+    - `author`: Необязательный фильтр по автору книги.
+
+    **Успешный ответ:**
+    - **200 OK**: Возвращает список объектов Книга (согласно схеме List[Book]).
+
+    **Возможные ошибки:**
+    - **422 Unprocessable Entity**: Неверный формат параметров запроса skip или limit (обрабатывается FastAPI автоматически).
+    - **500 Internal Server Error**: Произошла внутренняя ошибка на сервере во время получения списка.
+    """
     try:
         return await service.list_books(
             skip=skip,
@@ -81,6 +114,22 @@ async def update_book(
     update_data: BookUpdate,
     service: BookService = Depends(get_book_service)
 ):
+    """
+    Получает список всех книг с возможностью фильтрации по языку или автору, с пагинацией.
+
+    **Параметры запроса:**
+    - `skip`: Пагинация, количество пропускаемых книг.
+    - `limit`: Пагинация, максимальное количество книг в ответе.
+    - `language`: Необязательный фильтр по языку книги.
+    - `author`: Необязательный фильтр по автору книги.
+
+    **Успешный ответ:**
+    - **200 OK**: Возвращает список объектов Книга (согласно схеме List[Book]).
+
+    **Возможные ошибки:**
+    - **422 Unprocessable Entity**: Неверный формат параметров запроса skip или limit (обрабатывается FastAPI автоматически).
+    - **500 Internal Server Error**: Произошла внутренняя ошибка на сервере во время получения списка.
+    """
     try:
         return await service.update_book(book_id, update_data)
     except BookNotFoundError as e:
@@ -99,11 +148,29 @@ async def update_book(
             detail="Internal server error during book update." 
         ) from e
     
+
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(
     book_id: UUID,
     service: BookService = Depends(get_book_service)
 ):
+    """
+    Получает информацию об одной книге по ее уникальному идентификатору (ID).
+
+    **Параметры пути:**
+    - `book_id`: Уникальный идентификатор книги (в формате UUID).
+
+    **Параметры запроса:**
+    - Не принимаются.
+
+    **Успешный ответ:**
+    - **200 OK**: Возвращает объект Книга (согласно схеме Book).
+
+    **Возможные ошибки:**
+    - **404 Not Found**: Книга с указанным ID не найдена.
+    - **422 Unprocessable Entity**: Неверный формат book_id в пути (обрабатывается FastAPI автоматически).
+    - **500 Internal Server Error**: Произошла внутренняя ошибка на сервере.
+    """
     try:
         return await service.delete_book(book_id)
     except BookNotFoundError as e:
