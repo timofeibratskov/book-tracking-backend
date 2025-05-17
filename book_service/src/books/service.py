@@ -1,4 +1,3 @@
-from sqlalchemy import exc
 from src.books.exceptions import (
     ISBNAlreadyExistsError,
     BookNotFoundError,
@@ -9,6 +8,8 @@ from src.books.repository import IBookRepository
 from src.books.schemas import Book, BookCreate, BookUpdate
 from src.books.models import BookModel
 from uuid import UUID
+from typing import Optional
+
 
 class BookService:
     def __init__(self, repo: IBookRepository):
@@ -33,9 +34,18 @@ class BookService:
             raise ServiceError("An unexpected error occurred during book creation", original_error=e) from e
 
 
-    async def list_books(self, skip: int = 0, limit: int = 100) -> list[Book]:
+    async def list_books(self,
+                        skip: int = 0,
+                        limit: int = 100,
+                        language: Optional[str] = None,
+                        author: Optional[str] = None
+                        ) -> list[Book]:
         try:
-            db_books = await self._repo.get_all(skip=skip, limit=limit)
+            db_books = await self._repo.get_all(skip=skip,
+                                                limit=limit,
+                                                language=language,
+                                                author=author
+                                                )
             return [Book.model_validate(db_book) for db_book in db_books]
         except RepositoryError as e:
             raise ServiceError(f"Repository error during listing books: {e}", original_error=e) from e
@@ -80,6 +90,7 @@ class BookService:
             raise ServiceError(f"Repository error: {e}", original_error=e) from e 
         except Exception as e:
              raise ServiceError("An unexpected error occurred during book update", original_error=e) from e
+
 
     async def delete_book(self, book_id: UUID) -> None:
         try:

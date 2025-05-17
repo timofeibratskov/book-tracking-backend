@@ -5,14 +5,19 @@ from sqlalchemy import select, exc, delete
 from src.books.models import BookModel
 from uuid import UUID
 from src.books.exceptions import RepositoryError
-
+from typing import Optional
 class IBookRepository(ABC):
     @abstractmethod
     async def create(self, book: BookModel) -> BookModel:
         ...
 
     @abstractmethod
-    async def get_all(self, skip: int, limit: int) -> List[BookModel]:
+    async def get_all(self,
+                      skip: int = 0,
+                      limit: int = 100,
+                      language: Optional[str] = None,
+                      author: Optional[str] = None
+                    ) -> List[BookModel]:
         ...
 
     @abstractmethod
@@ -43,10 +48,16 @@ class SqlBookRepository(IBookRepository):
             raise RepositoryError("Database operation failed during book creation", original_error=e) from e
 
 
-    async def get_all(self, skip: int = 0, limit: int = 100) -> List[BookModel]:
+    async def get_all(self, skip: int = 0, limit: int = 100,language: Optional[str] = None, author: Optional[str] = None) -> List[BookModel]:
         try:
+            query = select(BookModel)
+            if language is not None:
+                query = query.where(BookModel.language == language)
+            if author is not None:
+                query = query.where(BookModel.author == author)
+            query = query.offset(skip).limit(limit)
             result = await self._session.execute(
-                select(BookModel).offset(skip).limit(limit))
+                query)
             return list(result.scalars().all())
         except exc.SQLAlchemyError as e:
             raise RepositoryError("Database operation failed while retrieving books", original_error=e) from e

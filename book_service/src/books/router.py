@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from uuid import UUID
 from src.books.schemas import Book, BookCreate, BookUpdate
 from src.books.service import BookService
@@ -7,6 +7,7 @@ from src.books.exceptions import (
     ISBNAlreadyExistsError,
     ServiceError 
 )
+from typing import Optional
 from src.dependencies import get_book_service
 
 
@@ -35,12 +36,19 @@ async def create_book(
 
 @router.get("/", response_model=list[Book])
 async def list_books(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0), 
+    limit: int = Query(100, ge=1, le=100), 
+    language: Optional[str] = Query(None, description="Filter books by language"), 
+    author: Optional[str] = Query(None, description="Filter books by author"),
     service: BookService = Depends(get_book_service)
 ):
     try:
-        return await service.list_books(skip=skip, limit=limit)
+        return await service.list_books(
+            skip=skip,
+            limit=limit,
+            language=language,
+            author=author            
+            )
     except ServiceError as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
