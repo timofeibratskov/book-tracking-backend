@@ -8,6 +8,15 @@
             "name": "bookdb",
             "database": "db",
             "username": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5433,
+            "driver": "PostgreSQL",
+            "name": "libDB",
+            "database": "lib_db",
+            "username": "postgres"
         }
     ]
 }
