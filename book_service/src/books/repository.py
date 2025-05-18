@@ -6,6 +6,8 @@ from src.books.models import BookModel
 from uuid import UUID
 from src.books.exceptions import RepositoryError
 from typing import Optional
+
+
 class IBookRepository(ABC):
     @abstractmethod
     async def create(self, book: BookModel) -> BookModel:
