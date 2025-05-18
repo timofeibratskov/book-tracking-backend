@@ -9,11 +9,10 @@ from src.books.schemas import Book, BookCreate, BookUpdate
 from src.books.models import BookModel
 from uuid import UUID
 from typing import Optional
-from src.rabbit.producer import AsyncioRabbitMQProducer
-import asyncio
+from src.rabbit.producer import RabbitMQProducer
 
 class BookService:
-    def __init__(self, repo: IBookRepository, producer: AsyncioRabbitMQProducer):
+    def __init__(self, repo: IBookRepository, producer: RabbitMQProducer):
         self._repo = repo
         self._producer = producer 
 
@@ -22,8 +21,8 @@ class BookService:
         try:
             db_book = BookModel(**book_data.model_dump())
             created_book = await self._repo.create(db_book) 
-            asyncio.create_task(self._producer.publish_book_event(created_book.id, "created"))
-            print("----------send-for--create-----------")
+            await self._producer.send_event(created_book.id, "created")
+            print("----------send-for-create-----------")
             return Book.model_validate(created_book)
         except RepositoryError as e:
             original_sqla_error = e.original_error
@@ -101,8 +100,8 @@ class BookService:
             deleted_count = await self._repo.delete(book_id)
             if deleted_count == 0:
                 raise BookNotFoundError(book_id)
-            asyncio.create_task(self._producer.publish_book_event(book_id, "deleted"))
-            print("----------send-for--delete-----------")
+            await self._producer.send_event(book_id,"deleted")
+            print("----------send-for-delete-----------")
             return None
         except RepositoryError as e:
             raise ServiceError(f"Repository error during getting book with ID {id}: {e}", original_error=e) from e

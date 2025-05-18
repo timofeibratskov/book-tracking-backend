@@ -21,7 +21,7 @@ class Settings(BaseSettings):
 
     @property
     def RABBITMQ_URL(self):
-        return f"ampq://{self.RABBITMQ_USER}:{self.RABBITMQ_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/"
+        return f"amqp://{self.RABBITMQ_USER}:{self.RABBITMQ_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/"
 
     model_config = SettingsConfigDict(env_file=".env")
 

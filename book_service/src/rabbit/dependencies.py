@@ -1,10 +1,10 @@
-from fastapi import  Request
-from src.rabbit.producer import AsyncioRabbitMQProducer 
+from fastapi import Request, HTTPException
+from src.rabbit.producer import RabbitMQProducer
 
-def get_rabbitmq_producer(request: Request) -> AsyncioRabbitMQProducer:
-    producer_instance = getattr(request.app.state, 'rabbitmq_producer', None)
-
-    if not isinstance(producer_instance, AsyncioRabbitMQProducer):
-        raise RuntimeError("RabbitMQ Producer is not available in app state or not correctly initialized.")
-
-    return producer_instance
+async def get_rabbit_producer(request: Request) -> RabbitMQProducer:
+    if not hasattr(request.app.state, 'rabbitmq_producer'):
+        raise HTTPException(
+            status_code=500,
+            detail="RabbitMQ producer not initialized"
+        )
+    return request.app.state.rabbitmq_producer

@@ -1,58 +1,56 @@
 import aio_pika
-import asyncio
-import json
 from uuid import UUID
-from typing import Optional
+from src.rabbit.schemas import BookEvent
+import logging
 
+logger = logging.getLogger(__name__)
 
-class AsyncioRabbitMQProducer:
-    def __init__(self, amqp_url: str): 
-        self._amqp_url = amqp_url 
-        self._connection: Optional[aio_pika.RobustConnection] = None
-        self._channel: Optional[aio_pika.Channel] = None
-        self._exchange_name = "book_events"
-        self._exchange: Optional[aio_pika.Exchange] = None
-
+class RabbitMQProducer:
+    def __init__(self, amqp_url: str):
+        self.amqp_url = amqp_url
+        self.connection = None
+        self.channel = None
+        self.exchange = None
 
     async def connect(self):
-        if self._connection is None or self._connection.is_closed:
-            try:
-                self._connection = await aio_pika.connect_robust(
-                    self._amqp_url,
-                    loop=asyncio.get_event_loop()
-                )
-                self._channel = await self._connection.channel()
-                self._exchange = await self._channel.declare_exchange(
-                    self._exchange_name,
-                    aio_pika.ExchangeType.TOPIC,
-                    durable=True
-                )
-            except Exception as e:
-                raise
+        try:
+            self.connection = await aio_pika.connect_robust(self.amqp_url)
+            self.channel = await self.connection.channel()
+            self.exchange = await self.channel.declare_exchange(
+                "book_events",
+                aio_pika.ExchangeType.TOPIC,
+                durable=True
+            )
+            logger.info("Connected to RabbitMQ")
+            return True
+        except Exception as e:
+            logger.error(f"Connection error: {str(e)}")
+            return False
 
+    async def is_connected(self):
+        return self.connection and not self.connection.is_closed
+
+    async def send_event(self, book_id: UUID, action: str):
+        if not await self.is_connected():
+            if not await self.connect():
+                raise ConnectionError("RabbitMQ connection failed")
+        
+        try:
+            event = BookEvent(book_id=book_id, action=action)
+            await self.exchange.publish(
+                aio_pika.Message(
+                    body=event.model_dump_json().encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                ),
+                routing_key=f"book.{action}"
+            )
+            logger.debug(f"Sent event: {event}")
+            return True
+        except Exception as e:
+            logger.error(f"Error sending event: {str(e)}")
+            return False
 
     async def disconnect(self):
-        if self._connection and not self._connection.is_closed:
-            await self._connection.close()
-        self._connection = None
-        self._channel = None
-        self._exchange = None
-
-    
-    async def publish_book_event(self, book_id: UUID, action: str):
-        if self._exchange is None:
-             return
-        message_data = {
-            "book_id": str(book_id),
-            "action": action
-        }
-        message_body = json.dumps(message_data).encode('utf-8')
-        routing_key = f"book.{action}"
-        message = aio_pika.Message(
-            body=message_body,
-            delivery_mode=aio_pika.DeliveryMode.PERSISTENT
-        )
-        try:
-            await self._exchange.publish(message, routing_key=routing_key)
-        except Exception as e:
-            raise
+        if self.connection and not self.connection.is_closed:
+            await self.connection.close()
+            logger.info("Disconnected from RabbitMQ")
