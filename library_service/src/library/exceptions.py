@@ -1,38 +1,48 @@
 from uuid import UUID
 from typing import Optional
 
-class BookError(Exception):
+
+class BookStatusError(Exception):
     pass
 
-class InvalidUUIDError(BookError):
+
+class InvalidUUIDError(BookStatusError):
     def __init__(self, invalid_id: str):
         self.invalid_id = invalid_id
         super().__init__(f"Invalid UUID format: '{invalid_id}'")
 
-class ISBNAlreadyExistsError(BookError):
-    def __init__(self, isbn: str):
-        self.isbn = isbn
-        super().__init__(f"Book with ISBN '{isbn}' already exists")
 
-class BookNotFoundError(BookError):
-    def __init__(self, book_id: str):
+class BookStatusNotFoundError(BookStatusError):
+    def __init__(self, book_id: UUID): 
         self.book_id = book_id
-        super().__init__(f"Book with ID '{book_id}' not found")
+        super().__init__(f"Book status with ID '{book_id}' not found")
 
 
-class ConcurrentUpdateError(BookError):
+class BookNotAvailableError(BookStatusError):
     def __init__(self, book_id: UUID):
         self.book_id = book_id
-        super().__init__(f"Concurrent modification detected for book {book_id}")
+        super().__init__(f"Book with ID '{book_id}' is not available for borrowing.")
 
 
-class RepositoryError(BookError):
+class BookNotBorrowedError(BookStatusError):
+    def __init__(self, book_id: UUID):
+        self.book_id = book_id
+        super().__init__(f"Book with ID '{book_id}' was not borrowed.")
+
+
+class RepositoryError(BookStatusError):
     def __init__(self, message: str = "Database operation failed", original_error: Optional[Exception] = None):
         self.original_error = original_error
-        super().__init__(f"Repository error: {message}")
+        full_message = f"Repository error: {message}"
+        if original_error:
+             full_message += f" (Original error: {original_error})"
+        super().__init__(full_message)
 
 
-class ServiceError(BookError):
+class ServiceError(BookStatusError):
     def __init__(self, message: str = "An unexpected service error occurred", original_error: Optional[Exception] = None):
         self.original_error = original_error
-        super().__init__(f"Service error: {message}")
+        full_message = f"Service error: {message}"
+        if original_error:
+             full_message += f" (Original error: {original_error})"
+        super().__init__(full_message)
