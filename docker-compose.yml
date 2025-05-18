@@ -21,7 +21,16 @@ services:
     volumes:
       - db_lib_data:/var/lib/postgresql/data/ 
 
+  rabbit:
+    image: rabbitmq:management
+    hostname: rabbitmq 
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
 
 volumes:
   db_data:
   db_lib_data:
+  rabbitmq_data:
