@@ -100,7 +100,6 @@ class LibraryService:
 
 
     async def get_book_status(self, book_id: UUID) -> BookStatus:
-        
         try:
             book_status_model = await self._library_repo.get(book_id)
             if book_status_model is None:
