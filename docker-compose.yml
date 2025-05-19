@@ -1,4 +1,5 @@
 services:
+
   db_book:
     image: postgres:13
     environment:
@@ -21,6 +22,17 @@ services:
     volumes:
       - db_lib_data:/var/lib/postgresql/data/ 
 
+  db_user: 
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: user_db
+    ports:
+      - "5434:5432" 
+    volumes:
+      - db_user_data:/var/lib/postgresql/data/ 
+
   rabbit:
     image: rabbitmq:management
     hostname: rabbitmq 
@@ -33,4 +45,5 @@ services:
 volumes:
   db_data:
   db_lib_data:
+  db_user_data:
   rabbitmq_data:
