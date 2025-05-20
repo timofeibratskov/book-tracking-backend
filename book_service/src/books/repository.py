@@ -31,7 +31,7 @@ class IBookRepository(ABC):
         ...
 
     @abstractmethod
-    async def delete(self, book: BookModel) -> None:
+    async def delete(self, book: BookModel) -> int:
         ...
 
 

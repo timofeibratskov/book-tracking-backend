@@ -17,6 +17,15 @@
             "name": "libDB",
             "database": "lib_db",
             "username": "postgres"
+        },
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5434,
+            "driver": "PostgreSQL",
+            "database": "user_db",
+            "username": "postgres",
+            "name": "user_db"
         }
     ]
 }
