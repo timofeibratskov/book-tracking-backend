@@ -28,7 +28,7 @@ class SqlUserRepository(IUserRepository):
         await self.session.refresh(user)
         return user
 
-    async def delete(self, user_id: UUID) -> None:
+    async def delete(self, user_id: UUID) -> int:
         result = await self.session.execute(
             delete(UserModel).where(UserModel.id == user_id)
             )
