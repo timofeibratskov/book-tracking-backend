@@ -16,7 +16,7 @@ class UserService:
         
         user_model = UserModel(
             email=user_req.email,
-            password=user_req.password 
+            password=self._pwd_context.hash(user_req.password) 
             )
         user =  await self._repo.create(user_model)
         return UserResponse(
@@ -24,7 +24,6 @@ class UserService:
             email=user.email,
             role=UserRole.user
             )
-        #  password=self._pwd_context.hash(user_req.password)
 
 
     async def delete_user(self, id: UUID) -> bool:
@@ -49,7 +48,7 @@ class UserService:
         user = await self._repo.get_by_email(user_req.email)
         if not user:
             raise ValueError("User not found")
-        if user.password != user_req.password:
+        if not self._pwd_context.verify(user_req.password, user.password):          
             raise ValueError("Invalid credentials")
         return UserResponse(
             id=user.id,
