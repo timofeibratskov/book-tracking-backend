@@ -7,11 +7,10 @@ from starlette.status import (
     HTTP_500_INTERNAL_SERVER_ERROR,
 )
 from authx.exceptions import MissingTokenError, JWTDecodeError
-from src.library.exceptions import (
-    InvalidUUIDError,
-    BookStatusNotFoundError,
-    BookNotAvailableError,
-    BookNotBorrowedError,
+from src.users.exceptions import (
+    UserNotFoundError,
+    EmailAlreadyExistsError,
+    InvalidCredentialsError,
     ServiceError,
 )
 
@@ -19,10 +18,11 @@ from src.library.exceptions import (
 async def missing_token_exception_handler(request: Request, exc: MissingTokenError):
     return JSONResponse(
         status_code=HTTP_401_UNAUTHORIZED,
-        content={"detail": "Authorization header with Bearer token is required"},
+        content={"detail": "Authorization token is missing."},
     )
 
-async def jwt_decode_error_handler(request: Request, exc: JWTDecodeError):
+
+async def jwt_decode_exception_handler(request: Request, exc: JWTDecodeError):
     if "expired" in str(exc).lower():
         detail = "Token has expired"
     else:
@@ -32,30 +32,24 @@ async def jwt_decode_error_handler(request: Request, exc: JWTDecodeError):
         content={"detail": detail},
     )
 
-async def invalid_uuid_handler(request: Request, exc: InvalidUUIDError):
-    return JSONResponse(
-        status_code=HTTP_400_BAD_REQUEST,
-        content={"detail": str(exc)},
-    )
 
-
-async def book_status_not_found_handler(request: Request, exc: BookStatusNotFoundError):
+async def user_not_found_exception_handler(request: Request, exc: UserNotFoundError):
     return JSONResponse(
         status_code=HTTP_404_NOT_FOUND,
         content={"detail": str(exc)},
     )
 
 
-async def book_not_available_handler(request: Request, exc: BookNotAvailableError):
+async def email_exists_exception_handler(request: Request, exc: EmailAlreadyExistsError):
     return JSONResponse(
         status_code=HTTP_400_BAD_REQUEST,
         content={"detail": str(exc)},
     )
 
 
-async def book_not_borrowed_handler(request: Request, exc: BookNotBorrowedError):
+async def invalid_credentials_exception_handler(request: Request, exc: InvalidCredentialsError):
     return JSONResponse(
-        status_code=HTTP_400_BAD_REQUEST,
+        status_code=HTTP_401_UNAUTHORIZED,
         content={"detail": str(exc)},
     )
 
@@ -67,12 +61,10 @@ async def service_error_handler(request: Request, exc: ServiceError):
     )
 
 
-def register_exception_handlers(app):
+def register_user_exception_handlers(app):
     app.add_exception_handler(MissingTokenError, missing_token_exception_handler)
-    app.add_exception_handler(JWTDecodeError, jwt_decode_error_handler)
-    app.add_exception_handler(MissingTokenError, missing_token_exception_handler)
-    app.add_exception_handler(InvalidUUIDError, invalid_uuid_handler)
-    app.add_exception_handler(BookStatusNotFoundError, book_status_not_found_handler)
-    app.add_exception_handler(BookNotAvailableError, book_not_available_handler)
-    app.add_exception_handler(BookNotBorrowedError, book_not_borrowed_handler)
+    app.add_exception_handler(JWTDecodeError, jwt_decode_exception_handler)
+    app.add_exception_handler(UserNotFoundError, user_not_found_exception_handler)
+    app.add_exception_handler(EmailAlreadyExistsError, email_exists_exception_handler)
+    app.add_exception_handler(InvalidCredentialsError, invalid_credentials_exception_handler)
     app.add_exception_handler(ServiceError, service_error_handler)
