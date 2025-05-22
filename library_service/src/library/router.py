@@ -4,29 +4,13 @@ from fastapi import APIRouter, Depends, status, Response
 from src.library.schemas import BookStatus, BookStatusCreate
 from src.library.service import LibraryService
 from src.dependencies import get_library_service
-from src.auth import security
-from authx import RequestToken,TokenPayload
+from authx import RequestToken
+from src.auth.permissions import require_admin, require_authenticated
 
 router = APIRouter(
     prefix="/library",
     tags=["library"],
 )
-
-def require_admin(payload: TokenPayload = Depends(security.access_token_required)):
-    print({
-        "id":payload.sub,
-       "role": getattr(payload,"role") 
-    })
-    if "admin" not in getattr(payload, "role", []):
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
-        )
-    return payload
-
-def require_authenticated(token: RequestToken = Depends(security.access_token_required)):
-    return token
 
 
 @router.post(

@@ -5,24 +5,11 @@ from typing import Optional
 from src.books.schemas import Book, BookCreate, BookUpdate
 from src.books.service import BookService
 from src.dependencies import get_book_service
-from src.auth import security
-from authx import RequestToken, TokenPayload
+from authx import RequestToken
+from src.auth.permissions import require_admin, require_authenticated
+
 
 router = APIRouter(prefix="/books", tags=["books"])
-
-
-def require_admin(payload: TokenPayload = Depends(security.access_token_required)):
-    if "admin" not in getattr(payload, "role", []):
-        from fastapi import HTTPException
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
-        )
-    return payload
-
-
-def require_authenticated(token: RequestToken = Depends(security.access_token_required)):
-    return token
 
 
 @router.post("/", response_model=Book, status_code=status.HTTP_201_CREATED)
