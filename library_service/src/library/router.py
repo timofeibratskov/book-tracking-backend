@@ -1,32 +1,29 @@
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, status, Response
 from src.library.schemas import BookStatus, BookStatusCreate
 from src.library.service import LibraryService
 from src.dependencies import get_library_service
-from src.library.exceptions import (
-    BookStatusNotFoundError,
-    BookNotAvailableError,
-    BookNotBorrowedError,
-    ServiceError
-)
 from src.auth import security
-from authx import RequestToken
+from authx import RequestToken,TokenPayload
 
 router = APIRouter(
     prefix="/library",
     tags=["library"],
 )
 
-
-def require_admin(token: RequestToken = Depends(security.access_token_required)):
-    if "admin" not in token.role:
+def require_admin(payload: TokenPayload = Depends(security.access_token_required)):
+    print({
+        "id":payload.sub,
+       "role": getattr(payload,"role") 
+    })
+    if "admin" not in getattr(payload, "role", []):
+        from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin privileges required"
         )
-    return token
-
+    return payload
 
 def require_authenticated(token: RequestToken = Depends(security.access_token_required)):
     return token
@@ -44,19 +41,7 @@ async def create_book_status(
     token: RequestToken = Depends(require_admin),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Создает новую запись о статусе книги. Принимает только ID книги.
-    Начальный статус: доступна, даты выдачи/возврата: None.
-    Доступно только для администратора.
-    """
-    try:
-        book_id = book_status_create.book_id
-        created_book_status = await library_service.create_book_status(book_id)
-        return created_book_status
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error during creation: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred during creation: {e}")
+    return await library_service.create_book_status(book_status_create.book_id)
 
 
 @router.delete(
@@ -70,26 +55,14 @@ async def delete_book_status(
     token: RequestToken = Depends(require_admin),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Удаляет запись о статусе книги по её уникальному идентификатору.
-    Возвращает 404, если статус книги не найден.
-    Доступно только для администратора.
-    """
-    try:
-        deleted_count = await library_service.delete_book_status(book_id)
-
-        if deleted_count == 0:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Book status with ID {book_id} not found"
-            )
-
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error during deletion: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred during deletion: {e}")
+    deleted_count = await library_service.delete_book_status(book_id)
+    if deleted_count == 0:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Book status with ID {book_id} not found"
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get(
@@ -103,19 +76,7 @@ async def get_book_status(
     token: RequestToken = Depends(require_authenticated),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Получает статус книги по её уникальному идентификатору.
-    Доступно для любого авторизованного пользователя.
-    """
-    try:
-        book_status = await library_service.get_book_status(book_id)
-        return book_status
-    except BookStatusNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+    return await library_service.get_book_status(book_id)
 
 
 @router.get(
@@ -128,17 +89,7 @@ async def get_available_books(
     token: RequestToken = Depends(require_authenticated),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Получает список всех книг, которые доступны для выдачи.
-    Доступно для любого авторизованного пользователя.
-    """
-    try:
-        available_books = await library_service.get_available_books()
-        return available_books
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+    return await library_service.get_available_books()
 
 
 @router.post(
@@ -152,21 +103,7 @@ async def borrow_book(
     token: RequestToken = Depends(require_authenticated),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Отмечает книгу как взятую. Доступно для любого авторизованного пользователя.
-    """
-    try:
-        updated_book_status = await library_service.borrow_book(book_id)
-        return updated_book_status
-
-    except BookStatusNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except BookNotAvailableError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+    return await library_service.borrow_book(book_id)
 
 
 @router.post(
@@ -180,18 +117,4 @@ async def return_book(
     token: RequestToken = Depends(require_authenticated),
     library_service: LibraryService = Depends(get_library_service)
 ):
-    """
-    Отмечает книгу как возвращенную. Доступно для любого авторизованного пользователя.
-    """
-    try:
-        updated_book_status = await library_service.return_book(book_id)
-        return updated_book_status
-
-    except BookStatusNotFoundError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
-    except BookNotBorrowedError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-    except ServiceError as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Service error: {e}")
-    except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"An unexpected error occurred: {e}")
+    return await library_service.return_book(book_id)

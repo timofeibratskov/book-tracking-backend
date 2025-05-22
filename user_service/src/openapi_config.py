@@ -7,7 +7,7 @@ def configure_swagger(app: FastAPI):
             return app.openapi_schema
 
         openapi_schema = get_openapi(
-            title="Library User Service",
+            title="User Service",
             version="1.0.0",
             description="JWT авторизация для пользователей",
             routes=app.routes,

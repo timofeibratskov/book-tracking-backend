@@ -4,7 +4,7 @@ from src.users.service import UserService
 from src.users.schemas import UserResponse, UserRequest, Token
 from src.dependencies import get_user_service
 from src.auth import security
-from authx import RequestToken
+from authx import RequestToken,TokenPayload
 from src.users.exceptions import (
     UserNotFoundError, 
     EmailAlreadyExistsError, 
@@ -17,15 +17,18 @@ router = APIRouter(prefix="/users", tags=["Users"])
 
 @router.post("/register", response_model=Token)
 async def create_user(
-    user_data: UserRequest,
+    user_creds: UserRequest,
     service: UserService = Depends(get_user_service),
 ):
     try:
-        user = await service.create_user(user_data)
+        user = await service.login(user_creds)
         token = security.create_access_token(
             uid=str(user.id),
-            role=user.role
-        )
+            data={
+            "role": user.role.value, 
+            }
+        )  
+
         return {"access_token": token, "token_type": "bearer"}
     except EmailAlreadyExistsError as e:
         raise HTTPException(
@@ -93,7 +96,9 @@ async def login(
         user = await service.login(user_creds)
         token = security.create_access_token(
             uid=str(user.id),
-            role=user.role
+            data={
+            "role": user.role.value, 
+    }
         )
         return {"access_token": token, "token_type": "bearer"}
     except UserNotFoundError:

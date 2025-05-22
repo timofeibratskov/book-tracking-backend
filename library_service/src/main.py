@@ -7,8 +7,7 @@ from src.config import settings
 import logging
 from src.library.router import router
 from src.openapi_config import configure_swagger
-from authx.exceptions import MissingTokenError
-from src.exception_handlers import missing_token_exception_handler
+from src.exception_handlers import register_exception_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -38,4 +37,4 @@ async def app_lifespan(app: FastAPI):
 app = FastAPI(lifespan=app_lifespan)
 app.include_router(router)
 configure_swagger(app)
-app.add_exception_handler(MissingTokenError, missing_token_exception_handler)
+register_exception_handlers(app)
