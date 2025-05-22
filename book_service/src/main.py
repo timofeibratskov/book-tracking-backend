@@ -5,6 +5,7 @@ from src.config import settings
 from src.rabbit.producer import RabbitMQProducer
 from src.books.router import router as books_router
 from src.openapi_config import configure_swagger
+from src.exception_handlers import register_exception_handlers
 
 logger = logging.getLogger(__name__)
 
@@ -31,3 +32,4 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 app.include_router(books_router)
 configure_swagger(app)
+register_exception_handlers(app)
