@@ -1,6 +1,6 @@
 from typing import List
 from uuid import UUID
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, HTTPException
 from src.library.schemas import BookStatus, BookStatusCreate
 from src.library.service import LibraryService
 from src.dependencies import get_library_service
@@ -17,8 +17,15 @@ router = APIRouter(
     "",
     response_model=BookStatus,
     status_code=status.HTTP_201_CREATED,
-    summary="Создать статус книги (только для администратора)",
+    summary="Создать статус книги",
+    description="Создает новый статус для книги. Доступно только для администратора.",
     response_description="Созданный статус книги",
+    responses={
+        201: {"description": "Статус книги успешно создан"},
+        401: {"description": "Необходима авторизация"},
+        403: {"description": "Нет прав администратора"},
+        422: {"description": "Ошибка валидации входных данных"},
+    }
 )
 async def create_book_status(
     book_status_create: BookStatusCreate,
@@ -31,8 +38,15 @@ async def create_book_status(
 @router.delete(
     "/{book_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Удалить статус книги по ID (только для администратора)",
-    response_description="Успешное удаление",
+    summary="Удалить статус книги",
+    description="Удаляет статус книги по ID. Только для администратора.",
+    response_description="Статус книги успешно удален",
+    responses={
+        204: {"description": "Удалено успешно"},
+        401: {"description": "Необходима авторизация"},
+        403: {"description": "Нет прав администратора"},
+        404: {"description": "Статус книги не найден"},
+    }
 )
 async def delete_book_status(
     book_id: UUID,
@@ -41,7 +55,6 @@ async def delete_book_status(
 ):
     deleted_count = await library_service.delete_book_status(book_id)
     if deleted_count == 0:
-        from fastapi import HTTPException
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Book status with ID {book_id} not found"
@@ -52,8 +65,14 @@ async def delete_book_status(
 @router.get(
     "/status/{book_id}",
     response_model=BookStatus,
-    summary="Получить статус книги по ID",
+    summary="Получить статус книги",
+    description="Возвращает текущий статус книги по ее ID.",
     response_description="Статус книги",
+    responses={
+        200: {"description": "Статус книги найден"},
+        401: {"description": "Необходима авторизация"},
+        404: {"description": "Статус не найден"},
+    }
 )
 async def get_book_status(
     book_id: UUID,
@@ -66,8 +85,13 @@ async def get_book_status(
 @router.get(
     "/available",
     response_model=List[BookStatus],
-    summary="Получить список доступных книг",
+    summary="Список доступных книг",
+    description="Возвращает список всех доступных к выдаче книг.",
     response_description="Список доступных книг",
+    responses={
+        200: {"description": "Список доступных книг"},
+        401: {"description": "Необходима авторизация"},
+    }
 )
 async def get_available_books(
     token: RequestToken = Depends(require_authenticated),
@@ -80,7 +104,14 @@ async def get_available_books(
     "/{book_id}/borrow",
     response_model=BookStatus,
     summary="Взять книгу",
-    response_description="Обновленный статус книги после взятия",
+    description="Помечает книгу как выданную пользователю.",
+    response_description="Книга успешно выдана",
+    responses={
+        200: {"description": "Книга успешно взята"},
+        400: {"description": "Книга недоступна"},
+        401: {"description": "Необходима авторизация"},
+        404: {"description": "Книга не найдена"},
+    }
 )
 async def borrow_book(
     book_id: UUID,
@@ -94,7 +125,14 @@ async def borrow_book(
     "/{book_id}/return",
     response_model=BookStatus,
     summary="Вернуть книгу",
-    response_description="Обновленный статус книги после возврата",
+    description="Помечает книгу как возвращённую пользователем.",
+    response_description="Книга успешно возвращена",
+    responses={
+        200: {"description": "Книга возвращена"},
+        400: {"description": "Книга не была выдана"},
+        401: {"description": "Необходима авторизация"},
+        404: {"description": "Книга не найдена"},
+    }
 )
 async def return_book(
     book_id: UUID,
