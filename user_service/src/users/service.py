@@ -33,6 +33,8 @@ class UserService:
                 email=created_user.email,
                 role=created_user.role
             )
+        except EmailAlreadyExistsError:
+            raise
         except RepositoryError as e:
             raise ServiceError(f"Repository error occurred while creating user: {e}", original_error=e) from e
         except Exception as e:
