@@ -1,7 +1,7 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
-load_dotenv("D:/Users/Тимофей/PythonProjects/fastapi-library/book_service/.env")
+#load_dotenv("D:/Users/Тимофей/PythonProjects/fastapi-library/book_service/.env")
 
 
 class Settings(BaseSettings):

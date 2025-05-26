@@ -26,7 +26,7 @@ async def create_user(
     user_creds: UserRequest,
     service: UserService = Depends(get_user_service),
 ):
-    user = await service.login(user_creds)
+    user = await service.create_user(user_creds)
     token = security.create_access_token(
         uid=str(user.id),
         data={"role": user.role.value},

@@ -1,47 +1,81 @@
 services:
+  book_service:
+    build: ./book_service
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./book_service/.env
+    depends_on:
+      - db_book
+      - rabbit
+
+  library_service:
+    build: ./library_service
+    ports:
+      - "8800:8001"
+    env_file:
+      - ./library_service/.env
+    depends_on:
+      - db_library
+      - rabbit
+
+  user_service:
+    build: ./user_service
+    ports:
+      - "8888:8002"
+    env_file:
+      - ./user_service/.env
+    depends_on:
+      - db_user
+      - rabbit
 
   db_book:
     image: postgres:13
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres 
-      POSTGRES_DB: db     
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db
     ports:
       - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data/
 
-  db_library: 
+  db_library:
     image: postgres:13
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: lib_db
     ports:
-      - "5433:5432" 
+      - "5433:5432"
     volumes:
-      - db_lib_data:/var/lib/postgresql/data/ 
+      - db_lib_data:/var/lib/postgresql/data/
 
-  db_user: 
+  db_user:
     image: postgres:13
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: user_db
     ports:
-      - "5434:5432" 
+      - "5434:5432"
     volumes:
-      - db_user_data:/var/lib/postgresql/data/ 
+      - db_user_data:/var/lib/postgresql/data/
 
   rabbit:
     image: rabbitmq:management
-    hostname: rabbitmq 
+    hostname: rabbitmq
     ports:
       - "5672:5672"
       - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq/mnesia
-
+    
 volumes:
   db_data:
   db_lib_data:
